@@ -15,7 +15,7 @@ public :
 	}
 	void transfert(size_t deb, size_t cred, unsigned int val) ;
 	size_t size() const ;
-	bool comptabiliser (int attendu) const ;
+	bool comptabiliser (int attendu) ;
 };
 
 }
