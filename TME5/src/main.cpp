@@ -1,15 +1,21 @@
 #include "Vec3D.h"
 #include "Rayon.h"
 #include "Scene.h"
+#include "Pool.h"
+#include "Barrier.h"
+#include "RenderJob.h"
+
 #include <iostream>
 #include <algorithm>
 #include <fstream>
 #include <limits>
 #include <random>
 
+#define NTHREADS 8
+#define QSIZE 1000
+
 using namespace std;
 using namespace pr;
-
 
 void fillScene(Scene & scene, default_random_engine & re) {
 	// Nombre de spheres (rend le probleme plus dur)
@@ -28,55 +34,6 @@ void fillScene(Scene & scene, default_random_engine & re) {
 	scene.add(Sphere({50,50,40},15.0,Color::red));
 	scene.add(Sphere({100,20,50},55.0,Color::blue));
 
-}
-
-// return the index of the closest object in the scene that intersects "ray"
-// or -1 if the ray does not intersect any object.
-int findClosestInter(const Scene & scene, const Rayon & ray) {
-	auto minz = std::numeric_limits<float>::max();
-	int targetSphere = -1;
-	int index = 0;
-	for (const auto & obj : scene) {
-		// rend la distance de l'objet a la camera
-		auto zinter = obj.intersects(ray);
-		// si intersection plus proche  ?
-		if (zinter < minz) {
-			minz = zinter;
-			targetSphere = index;
-		}
-		index++;
-	}
-	return targetSphere;
-}
-
-// Calcule l'angle d'incidence du rayon à la sphere, cumule l'éclairage des lumières
-// En déduit la couleur d'un pixel de l'écran.
-Color computeColor(const Sphere & obj, const Rayon & ray, const Vec3D & camera, std::vector<Vec3D> & lights) {
-	Color finalcolor = obj.getColor();
-
-	// calcul du rayon et de sa normale a la sphere
-	// on prend le vecteur de la camera vers le point de l'ecran (dest - origine)
-	// on le normalise a la longueur 1, on multiplie par la distance à l'intersection
-	Vec3D rayInter = (ray.dest - ray.ori).normalize() * obj.intersects(ray);
-	// le point d'intersection
-	Vec3D intersection = rayInter + camera;
-	// la normale a la sphere au point d'intersection donne l'angle pour la lumiere
-	Vec3D normal = obj.getNormale(intersection);
-	// le niveau d'eclairage total contribue par les lumieres 0 sombre 1 total lumiere
-	double dt = 0;
-	// modifier par l'eclairage la couleur
-	for (const auto & light : lights) {
-		// le vecteur de la lumiere au point d'intersection
-		Vec3D tolight = (light - intersection);
-		// si on est du bon cote de la sphere, i.e. le rayon n'intersecte pas avant de l'autre cote
-		if (obj.intersects(Rayon(light,intersection)) >= tolight.length() - 0.05 ) {   //  epsilon 0.05 for double issues
-			dt += tolight.normalize() & normal ; // l'angle (scalaire) donne la puissance de la lumiere reflechie
-		}
-	}
-	// eclairage total
-	finalcolor = finalcolor * dt + finalcolor * 0.2; // *0.2 = lumiere speculaire ambiante
-
-	return finalcolor;
 }
 
 // produit une image dans path, représentant les pixels.
@@ -102,7 +59,7 @@ void exportImage(const char * path, size_t width, size_t height, Color * pixels)
 // pas d'accents pour eviter les soucis d'encodage
 
 int main () {
-
+{
 	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
 	// on pose une graine basee sur la date
 	default_random_engine re(std::chrono::system_clock::now().time_since_epoch().count());
@@ -118,38 +75,22 @@ int main () {
 	lights.emplace_back(Vec3D(50, 50, 120));
 	lights.emplace_back(Vec3D(200, 0, 120));
 
-	// les points de l'ecran, en coordonnées 3D, au sein de la Scene.
-	// on tire un rayon de l'observateur vers chacun de ces points
-	const Scene::screen_t & screen = scene.getScreenPoints();
-
 	// Les couleurs des pixels dans l'image finale
 	Color * pixels = new Color[scene.getWidth() * scene.getHeight()];
 
+	Pool pool(QSIZE);
+	pool.start(NTHREADS);
+
+	Barrier barrier(scene.getWidth());
+
 	// pour chaque pixel, calculer sa couleur
-	for (int x =0 ; x < scene.getWidth() ; x++) {
-		for (int  y = 0 ; y < scene.getHeight() ; y++) {
-			// le point de l'ecran par lequel passe ce rayon
-			auto & screenPoint = screen[y][x];
-			// le rayon a inspecter
-			Rayon  ray(scene.getCameraPos(), screenPoint);
-
-			int targetSphere = findClosestInter(scene, ray);
-
-			if (targetSphere == -1) {
-				// keep background color
-				continue ;
-			} else {
-				const Sphere & obj = *(scene.begin() + targetSphere);
-				// pixel prend la couleur de l'objet
-				Color finalcolor = computeColor(obj, ray, scene.getCameraPos(), lights);
-				// le point de l'image (pixel) dont on vient de calculer la couleur
-				Color & pixel = pixels[y*scene.getHeight() + x];
-				// mettre a jour la couleur du pixel dans l'image finale.
-				pixel = finalcolor;
-			}
-
-		}
+	for (int y = 0 ; y < scene.getHeight() ; y++) {
+		Job *j = new RenderJob(scene, lights, pixels, 0, y, barrier);
+		pool.submit(j);
 	}
+
+	barrier.waitFor();
+	pool.stop();
 
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 	    std::cout << "Total time "
@@ -157,6 +98,7 @@ int main () {
 	              << "ms.\n";
 
 	exportImage("toto.ppm",scene.getWidth(), scene.getHeight() , pixels);
+}
 
 	return 0;
 }
