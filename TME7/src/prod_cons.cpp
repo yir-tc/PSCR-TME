@@ -1,9 +1,10 @@
 #include "Stack.h"
 #include <iostream>
-#include <unistd.h>
-#include <sys/wait.h>
 #include <vector>
 
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/mman.h>
 
 using namespace std;
 using namespace pr;
@@ -23,7 +24,9 @@ void consomateur (Stack<char> * stack) {
 }
 
 int main () {
-	Stack<char> * s = new Stack<char>();
+	void *map = mmap(NULL, sizeof(Stack<char>), PROT_READ | PROT_WRITE, 
+		MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+	Stack<char> * s = new (map) Stack<char>();
 
 	pid_t pp = fork();
 	if (pp==0) {
@@ -40,7 +43,8 @@ int main () {
 	wait(0);
 	wait(0);
 
-	delete s;
+	munmap(map, sizeof(Stack<char>));
+	
 	return 0;
 }
 
