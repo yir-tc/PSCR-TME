@@ -49,7 +49,7 @@ int main() {
 
 	pr::Socket sock;
 
-	sock.connect("localhost", 1664);
+	sock.connect("127.0.0.1", 1664);
 
 	if (sock.isOpen()) {
 		int fd = sock.getFD();

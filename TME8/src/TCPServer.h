@@ -13,12 +13,15 @@ class TCPServer {
 	ConnectionHandler * handler; // le gestionnaire de session passe a la constru
 	// a completer
 public :
-	TCPServer(ConnectionHandler * handler): ss(nullptr),handler(handler) {}
+	TCPServer(ConnectionHandler * handler)
+	: ss(nullptr), handler(handler) {}
+	~TCPServer() { delete ss; }
+	
 	// Tente de creer une socket d'attente sur le port donné
 	bool startServer (int port);
 
 	// stoppe le serveur
-	void stopServer () ;
+	void stopServer ();
 };
 
 } // ns pr

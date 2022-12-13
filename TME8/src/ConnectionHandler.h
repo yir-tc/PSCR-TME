@@ -14,5 +14,8 @@ public:
 	virtual ConnectionHandler * clone() const = 0;
 	// pour virtual
 	virtual ~ConnectionHandler() {}
-};}
+};
+
+}
+
 #endif /* SRC_CONNECTIONHANDLER_H_ */

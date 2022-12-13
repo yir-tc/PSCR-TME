@@ -2,6 +2,8 @@
 #define SRC_SERVERSOCKET_H_
 
 #include "Socket.h"
+#include <unistd.h>
+#include <cstring>
 
 namespace pr {
 
@@ -17,7 +19,7 @@ public :
 
 	Socket accept();
 
-	void close();
+	void close() { ::close(socketfd); };
 };
 
 } // ns pr

@@ -24,7 +24,7 @@ int main00() {
 int main() {
 	pr::ServerSocket ss(1664);
 
-	while (1) {
+	while (ss.isOpen()) {
 		pr::Socket sc = ss.accept();
 
 		int fd = sc.getFD();
