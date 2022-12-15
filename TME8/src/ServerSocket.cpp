@@ -22,7 +22,6 @@ Socket ServerSocket::accept() {
     memset(&sa, 0, sz);
 
     int fd = ::accept(socketfd, (struct sockaddr*) &sa, &sz);
-    
     Socket s(fd);
     return s;
 }

@@ -16,9 +16,12 @@ public :
 	TCPServer(ConnectionHandler * handler)
 	: ss(nullptr), handler(handler) {}
 	~TCPServer() { delete ss; }
+
+	int getFD() const { return ss->getFD(); }
 	
 	// Tente de creer une socket d'attente sur le port donné
 	bool startServer (int port);
+	void handleConnectionWrapper(Socket s);
 
 	// stoppe le serveur
 	void stopServer ();

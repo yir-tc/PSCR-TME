@@ -19,7 +19,7 @@ public :
 
 	Socket accept();
 
-	void close() { ::close(socketfd); };
+	void close() { ::close(socketfd); socketfd = -1; };
 };
 
 } // ns pr

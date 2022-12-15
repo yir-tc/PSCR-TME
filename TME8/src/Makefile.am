@@ -1,5 +1,5 @@
 # noinst = no install, on peut utiliser bin_PROGRAMS sinon
-noinst_PROGRAMS = client server server2
+noinst_PROGRAMS = client server server2 ftp_server ftp_client
 
 INC_DIR = $(top_builddir)/include
 SRC_DIR = $(top_builddir)/src
@@ -13,15 +13,15 @@ AM_LDFLAGS = -pthread
 # version locale a une cible
 #cible_LDFLAGS = -pthread 
 
-server_SOURCES = ServerSocket.h ServerSocket.cpp Socket.h Socket.cpp server.cpp
+server_SOURCES = Socket.h Socket.cpp ServerSocket.h ServerSocket.cpp server.cpp
 
 client_SOURCES = Socket.h Socket.cpp client.cpp
  
-server2_SOURCES = TCPServer.h TCPServer.cpp ServerSocket.h ServerSocket.cpp Socket.h Socket.cpp server2.cpp
+server2_SOURCES = Socket.h Socket.cpp TCPServer.h TCPServer.cpp ServerSocket.h ServerSocket.cpp server2.cpp
 
+ftp_server_SOURCES = Socket.cpp Socket.h TCPServer.cpp ServerSocket.cpp FTPServer.cpp
 
-
-
+ftp_client_SOURCES = FTPClient.cpp Socket.cpp
 
 
 
